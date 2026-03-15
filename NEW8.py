@@ -1,46 +1,78 @@
 import streamlit as st
 import sys
 import subprocess
+import importlib
+
+# Настройка страницы
+st.set_page_config(
+    page_title="Анализ успеваемости учеников",
+    page_icon="📚",
+    layout="wide"
+)
 
 
-# Проверка наличия необходимых библиотек
-def check_imports():
-    """Проверяет наличие всех необходимых библиотек"""
-    required_packages = {
-        'pandas': 'pandas',
-        'numpy': 'numpy',
-        'plotly': 'plotly',
-        'sklearn': 'scikit-learn'
-    }
+# Функция для установки пакетов
+def install_package(package_name, import_name=None):
+    """Устанавливает пакет и возвращает модуль"""
+    if import_name is None:
+        import_name = package_name
 
-    missing_packages = []
-
-    for import_name, package_name in required_packages.items():
-        try:
-            __import__(import_name)
-        except ImportError:
-            missing_packages.append(package_name)
-
-    if missing_packages:
-        st.warning(f"⚠️ Отсутствуют библиотеки: {', '.join(missing_packages)}")
-        st.info("Пытаюсь установить...")
-
-        for package in missing_packages:
+    try:
+        return importlib.import_module(import_name)
+    except ImportError:
+        with st.spinner(f"Устанавливаю {package_name}..."):
             try:
-                subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
-                st.success(f"✅ {package} установлен")
-            except:
-                st.error(f"❌ Не удалось установить {package}")
+                # Сначала обновляем pip
+                subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
+                # Устанавливаем пакет
+                subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--no-cache-dir', package_name])
+                # Пробуем импортировать снова
+                return importlib.import_module(import_name)
+            except subprocess.CalledProcessError as e:
+                st.error(f"❌ Не удалось установить {package_name}. Ошибка: {e}")
+                return None
+            except ImportError as e:
+                st.error(f"❌ Пакет {package_name} установлен, но не импортируется: {e}")
+                return None
 
-        st.rerun()
 
-    return True
+# Прогресс-бар для установки
+with st.spinner("Проверка и установка необходимых библиотек..."):
+    # Устанавливаем базовые пакеты
+    pandas = install_package('pandas')
+    numpy = install_package('numpy')
 
+    # Устанавливаем plotly с альтернативными именами
+    plotly = install_package('plotly')
+    if plotly is None:
+        plotly = install_package('plotly==5.17.0')
 
-# Запускаем проверку
-check_imports()
+    # Устанавливаем scikit-learn
+    sklearn = install_package('scikit-learn', 'sklearn')
+    if sklearn is None:
+        sklearn = install_package('scikit-learn==1.3.0', 'sklearn')
 
-# Теперь импортируем все библиотеки
+# Проверяем успешность установки
+if plotly is None:
+    st.error("""
+    ❌ Не удалось установить plotly. 
+
+    Возможные решения:
+    1. Проверьте интернет-соединение
+    2. Попробуйте использовать requirements.txt с конкретными версиями
+    3. Обратитесь в поддержку Streamlit Cloud
+    """)
+    st.stop()
+
+if sklearn is None:
+    st.warning("⚠️ scikit-learn не установлен. Функции с трендами будут недоступны.")
+    SKLEARN_AVAILABLE = False
+else:
+    SKLEARN_AVAILABLE = True
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import StandardScaler
+
+# Импортируем остальные библиотеки
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -50,31 +82,41 @@ from datetime import datetime
 import re
 import os
 
-# Импортируем sklearn с проверкой
-try:
-    from sklearn.linear_model import LinearRegression
-    from sklearn.preprocessing import StandardScaler
 
-    SKLEARN_AVAILABLE = True
-except ImportError as e:
-    st.error(f"❌ Ошибка импорта scikit-learn: {e}")
-    st.info("Пожалуйста, убедитесь, что scikit-learn установлен: pip install scikit-learn")
-    SKLEARN_AVAILABLE = False
-
-
-    # Создаем заглушку для LinearRegression
-    class LinearRegression:
-        def __init__(self):
-            pass
-
-        def fit(self, X, y):
-            pass
-
-        def predict(self, X):
-            return np.zeros(len(X))
+# Функция для проверки plotly
+def check_plotly():
+    """Проверяет работоспособность plotly"""
+    try:
+        # Создаем тестовый график
+        fig = px.line(x=[1, 2, 3], y=[1, 2, 3])
+        return True
+    except Exception as e:
+        st.error(f"Plotly установлен, но не работает: {e}")
+        return False
 
 
-# Остальной код вашей программы...
+PLOTLY_WORKS = check_plotly()
+if not PLOTLY_WORKS:
+    st.warning("⚠️ Plotly не работает корректно. Некоторые визуализации будут упрощены.")
+
+# Информация о разработчике
+__author__ = "Даниил Зуев"
+__version__ = "2.0.0"
+__year__ = "2026"
+
+# Приветствие с информацией о разработчике
+st.sidebar.markdown("""
+---
+### 👨‍💻 О программе
+**Разработчик:** Даниил Зуев  
+**Версия:** 2.0.0  
+**Год:** 2026  
+""")
+
+# [Весь остальной код вашей программы...]
+# Вставьте сюда весь остальной код из вашего NEW8.py
+# Но замените все вызовы plotly на проверки:
+
 
 
 def is_numeric_column(series, threshold=0.8):
