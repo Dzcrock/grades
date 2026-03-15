@@ -1,43 +1,77 @@
 import streamlit as st
+import sys
+import subprocess
+
+
+# Проверка наличия необходимых библиотек
+def check_imports():
+    """Проверяет наличие всех необходимых библиотек"""
+    required_packages = {
+        'pandas': 'pandas',
+        'numpy': 'numpy',
+        'plotly': 'plotly',
+        'sklearn': 'scikit-learn'
+    }
+
+    missing_packages = []
+
+    for import_name, package_name in required_packages.items():
+        try:
+            __import__(import_name)
+        except ImportError:
+            missing_packages.append(package_name)
+
+    if missing_packages:
+        st.warning(f"⚠️ Отсутствуют библиотеки: {', '.join(missing_packages)}")
+        st.info("Пытаюсь установить...")
+
+        for package in missing_packages:
+            try:
+                subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
+                st.success(f"✅ {package} установлен")
+            except:
+                st.error(f"❌ Не удалось установить {package}")
+
+        st.rerun()
+
+    return True
+
+
+# Запускаем проверку
+check_imports()
+
+# Теперь импортируем все библиотеки
 import pandas as pd
 import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from datetime import datetime
 import re
-import warnings
-warnings.filterwarnings('ignore')
-# Добавьте в начало файла после остальных импортов
-from sklearn.linear_model import LinearRegression
+import os
 
-# Проверка наличия plotly
+# Импортируем sklearn с проверкой
 try:
-    import plotly.express as px
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import StandardScaler
 
-    PLOTLY_AVAILABLE = True
+    SKLEARN_AVAILABLE = True
 except ImportError as e:
-    st.warning(f"Plotly не установлен: {e}. Некоторые визуализации будут недоступны.")
-    PLOTLY_AVAILABLE = False
+    st.error(f"❌ Ошибка импорта scikit-learn: {e}")
+    st.info("Пожалуйста, убедитесь, что scikit-learn установлен: pip install scikit-learn")
+    SKLEARN_AVAILABLE = False
 
 
-    # Создаем заглушки для plotly
-    class DummyPlotly:
+    # Создаем заглушку для LinearRegression
+    class LinearRegression:
         def __init__(self):
             pass
 
+        def fit(self, X, y):
+            pass
 
-    px = DummyPlotly()
-    go = DummyPlotly()
-    make_subplots = None
-
-# Импорт sklearn с проверкой
-try:
-    from sklearn.linear_model import LinearRegression
-
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    SKLEARN_AVAILABLE = False
-    st.warning("scikit-learn не установлен. Некоторые функции анализа будут недоступны.")
+        def predict(self, X):
+            return np.zeros(len(X))
 
 
 # Остальной код вашей программы...
