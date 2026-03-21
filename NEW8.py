@@ -16,40 +16,6 @@ warnings.filterwarnings('ignore')
 # Добавьте в начало файла после остальных импортов
 from sklearn.linear_model import LinearRegression
 
-# Проверка наличия plotly
-try:
-    import plotly.express as px
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-
-    PLOTLY_AVAILABLE = True
-except ImportError as e:
-    st.warning(f"Plotly не установлен: {e}. Некоторые визуализации будут недоступны.")
-    PLOTLY_AVAILABLE = False
-
-
-    # Создаем заглушки для plotly
-    class DummyPlotly:
-        def __init__(self):
-            pass
-
-
-    px = DummyPlotly()
-    go = DummyPlotly()
-    make_subplots = None
-
-# Импорт sklearn с проверкой
-try:
-    from sklearn.linear_model import LinearRegression
-
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    SKLEARN_AVAILABLE = False
-    st.warning("scikit-learn не установлен. Некоторые функции анализа будут недоступны.")
-
-
-# Остальной код вашей программы...
-
 
 def is_numeric_column(series, threshold=0.8):
     """Проверяет, является ли колонка числовой (номера учеников)"""
